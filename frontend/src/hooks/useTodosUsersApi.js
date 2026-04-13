@@ -1,3 +1,4 @@
+// Handles API requests and state for todos, users, and connection status.
 import { useCallback, useEffect, useState } from "react";
 
 const sortByDueAt = (items) =>

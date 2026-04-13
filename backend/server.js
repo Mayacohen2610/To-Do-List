@@ -1,3 +1,4 @@
+// Starts the backend server and listens on the configured port.
 const dotenv = require("dotenv");
 const { createApp } = require("./app");
 

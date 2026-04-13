@@ -1,3 +1,4 @@
+// User filter controls for showing tasks assigned to selected users.
 import { toggleIdInList } from "../utils/ids";
 
 export function UserFilterSection({ users, activeFilterUserIds, setActiveFilterUserIds }) {

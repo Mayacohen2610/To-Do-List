@@ -1,3 +1,4 @@
+// Inline editor UI for updating an existing todo task.
 import { toggleIdInList } from "../utils/ids";
 
 export function TaskEditPanel({

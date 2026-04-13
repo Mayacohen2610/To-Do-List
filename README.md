@@ -6,7 +6,7 @@ A small full-stack TODO app built with React (Vite) and Express.
 
 - 🎨 Frontend: React + Vite + React Router
 - ⚙️ Backend: Node.js + Express
-- 💾 Data storage: local JSON file (`backend/data.json`)
+- 💾 Data storage: local JSON file (`backend/storage/data.json`)
 
 ## 📁 Project Structure
 
@@ -15,7 +15,11 @@ TODO-LIST/
 |- backend/
 |  |- app.js
 |  |- server.js
-|  |- data.json
+|  |- repositories/
+|  |- routes/
+|  |- storage/
+|  |  `- data.json
+|  |- utils/
 |  |- .env.example
 |  `- package.json
 |- frontend/

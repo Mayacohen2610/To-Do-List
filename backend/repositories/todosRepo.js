@@ -1,4 +1,5 @@
-const { store } = require("./store");
+// Provides data operations for todo records stored in the in-memory store.
+const { store } = require("../storage/store");
 
 function sortTodos(items) {
   return [...items].sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());

@@ -1,3 +1,4 @@
+// Renders todos grouped by day for the selected week.
 import { TaskAssignedUsers } from "./TaskAssignedUsers";
 import { TaskEditPanel } from "./TaskEditPanel";
 

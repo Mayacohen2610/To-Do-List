@@ -1,3 +1,4 @@
+// Displays user chips for users assigned to a todo task.
 export function TaskAssignedUsers({ todo, usersById }) {
   const assignedUsers = (todo.userIds || []).map((userId) => usersById[userId]).filter(Boolean);
 

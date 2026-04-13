@@ -1,4 +1,5 @@
-const { store } = require("./store");
+// Provides data operations for user records stored in the in-memory store.
+const { store } = require("../storage/store");
 
 function listUsers() {
   return store.users;

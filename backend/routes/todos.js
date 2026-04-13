@@ -1,5 +1,6 @@
+// Handles todo API endpoints for listing, creating, updating, and deleting todos.
 const express = require("express");
-const { store, saveStore } = require("../data/store");
+const { store, saveStore } = require("../storage/store");
 const {
   createTodo,
   deleteTodoByIndex,
@@ -8,7 +9,7 @@ const {
   listTodos,
   toggleTodo,
   updateTodo,
-} = require("../data/todosRepo");
+} = require("../repositories/todosRepo");
 const { sanitizeUserIds } = require("../utils/validation");
 
 const router = express.Router();

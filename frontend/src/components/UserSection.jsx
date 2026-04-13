@@ -1,3 +1,4 @@
+// User management section for adding and removing app users.
 export function UserSection({
   maxUsers,
   users,

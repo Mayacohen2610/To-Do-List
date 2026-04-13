@@ -1,3 +1,4 @@
+// Contains shared validation and normalization helpers for API input.
 function normalizeUserName(value) {
   return String(value || "").trim();
 }

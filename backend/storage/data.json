@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "id": 6,
+      "name": "Maya",
+      "color": "#4fff4d",
+      "createdAt": "2026-04-13T12:21:04.884Z"
+    }
+  ],
+  "todos": [],
+  "nextUserId": 7,
+  "nextTodoId": 8
+}

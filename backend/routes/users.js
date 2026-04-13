@@ -1,6 +1,7 @@
+// Handles user API endpoints for listing, creating, and deleting users.
 const express = require("express");
-const { store, saveStore } = require("../data/store");
-const { createUser, deleteUserAndCleanupTodos, listUsers } = require("../data/usersRepo");
+const { store, saveStore } = require("../storage/store");
+const { createUser, deleteUserAndCleanupTodos, listUsers } = require("../repositories/usersRepo");
 const { isValidHexColor, normalizeUserName } = require("../utils/validation");
 
 const MAX_USERS = 5;

@@ -1,7 +1,8 @@
+// Loads, validates, and saves persisted app data from data.json.
 const fs = require("fs");
 const path = require("path");
 
-const DATA_FILE_PATH = path.join(__dirname, "..", "data.json");
+const DATA_FILE_PATH = path.join(__dirname, "data.json");
 const DEFAULT_STORE = {
   users: [],
   todos: [],

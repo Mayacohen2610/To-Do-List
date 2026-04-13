@@ -1,3 +1,4 @@
+// Defines top-level client routes for the todo application.
 import { Navigate, Route, Routes } from "react-router-dom";
 import { WeekTodoPage, WeekTodoPageRoute } from "./pages/WeekTodoPage";
 

@@ -1,3 +1,4 @@
+// Main page that coordinates week-based todo views and task actions.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { OverdueSection } from "../components/OverdueSection";

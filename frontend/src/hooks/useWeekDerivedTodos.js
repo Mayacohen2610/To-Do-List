@@ -1,3 +1,4 @@
+// Derives week/day todo groupings and overdue tasks from source data.
 import { useMemo } from "react";
 import { addDays, getStartOfWeek, isWithinRange } from "../utils/dateWeek";
 
