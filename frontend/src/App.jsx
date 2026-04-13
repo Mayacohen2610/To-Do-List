@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const MAX_USERS = 5;
 
 const getStartOfWeek = (date) => {
   const start = new Date(date);
@@ -30,15 +31,31 @@ function WeekTodoPage({ weekOffset }) {
   const navigate = useNavigate();
   const [newTodoTitle, setNewTodoTitle] = useState("");
   const [newTodoDueAt, setNewTodoDueAt] = useState("");
+  const [newTodoUserIds, setNewTodoUserIds] = useState([]);
   const [todos, setTodos] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserColor, setNewUserColor] = useState("#7C4DFF");
+  const colorInputRef = useRef(null);
+  const [activeFilterUserIds, setActiveFilterUserIds] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState("Checking...");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [editingDueTodoId, setEditingDueTodoId] = useState(null);
+  const [editingTodoId, setEditingTodoId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState("");
   const [editingDueAt, setEditingDueAt] = useState("");
+  const [editingUserIds, setEditingUserIds] = useState([]);
 
   const sortByDueAt = (items) =>
     [...items].sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+
+  const toggleIdInList = (list, userId) =>
+    list.includes(userId) ? list.filter((id) => id !== userId) : [...list, userId];
+
+  const usersById = useMemo(
+    () => users.reduce((accumulator, user) => ({ ...accumulator, [user.id]: user }), {}),
+    [users]
+  );
 
   const fetchTodos = useCallback(async () => {
     try {
@@ -56,6 +73,21 @@ function WeekTodoPage({ weekOffset }) {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not load users.");
+    }
+  }, []);
+
   useEffect(() => {
     const checkBackendHealth = async () => {
       try {
@@ -67,6 +99,7 @@ function WeekTodoPage({ weekOffset }) {
 
         setConnectionStatus("Connected");
         fetchTodos();
+        fetchUsers();
       } catch (error) {
         console.error(error);
         setConnectionStatus("Disconnected");
@@ -74,7 +107,84 @@ function WeekTodoPage({ weekOffset }) {
     };
 
     checkBackendHealth();
-  }, [fetchTodos]);
+  }, [fetchTodos, fetchUsers]);
+
+  useEffect(() => {
+    setActiveFilterUserIds((previous) =>
+      previous.filter((userId) => users.some((user) => user.id === userId))
+    );
+    setNewTodoUserIds((previous) =>
+      previous.filter((userId) => users.some((user) => user.id === userId))
+    );
+    setEditingUserIds((previous) =>
+      previous.filter((userId) => users.some((user) => user.id === userId))
+    );
+  }, [users]);
+
+  const refreshData = useCallback(async () => {
+    await Promise.all([fetchTodos(), fetchUsers()]);
+  }, [fetchTodos, fetchUsers]);
+
+  const handleAddUser = async (event) => {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (!newUserName.trim()) {
+      setErrorMessage("User name is required.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newUserName.trim(),
+          color: newUserColor,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create user.");
+      }
+
+      const createdUser = await response.json();
+      setUsers((previous) => [...previous, createdUser]);
+      setNewUserName("");
+      setErrorMessage("");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message || "Could not create user.");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    const shouldDelete = window.confirm(
+      "Delete this user? All tasks assigned to this user will also be deleted."
+    );
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user.");
+      }
+
+      await refreshData();
+      setErrorMessage("");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("Could not delete user.");
+    }
+  };
 
   const handleAddTodo = async (event) => {
     event.preventDefault();
@@ -90,6 +200,11 @@ function WeekTodoPage({ weekOffset }) {
       return;
     }
 
+    if (newTodoUserIds.length === 0) {
+      setErrorMessage("Select at least one user for the task.");
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/todos`, {
         method: "POST",
@@ -99,20 +214,23 @@ function WeekTodoPage({ weekOffset }) {
         body: JSON.stringify({
           title: newTodoTitle.trim(),
           dueAt: newTodoDueAt,
+          userIds: newTodoUserIds,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create todo.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create todo.");
       }
 
       const createdTodo = await response.json();
       setTodos((prevTodos) => sortByDueAt([...prevTodos, createdTodo]));
       setNewTodoDueAt("");
+      setNewTodoUserIds([]);
       setErrorMessage("");
     } catch (error) {
       console.error(error);
-      setErrorMessage("Could not create todo.");
+      setErrorMessage(error.message || "Could not create todo.");
     }
 
     setNewTodoTitle("");
@@ -200,14 +318,26 @@ function WeekTodoPage({ weekOffset }) {
     }
   };
 
-  const handleStartEditingDueDate = (todo) => {
-    setEditingDueTodoId(todo.id);
+  const handleStartEditingTask = (todo) => {
+    setEditingTodoId(todo.id);
+    setEditingTitle(todo.title);
     setEditingDueAt(toDateTimeLocalValue(todo.dueAt));
+    setEditingUserIds(todo.userIds || []);
   };
 
-  const handleSaveDueDate = async (todoId) => {
+  const handleSaveTask = async (todoId) => {
+    if (!editingTitle.trim()) {
+      setErrorMessage("Task title cannot be empty.");
+      return;
+    }
+
     if (!editingDueAt) {
       setErrorMessage("Please choose a new due date.");
+      return;
+    }
+
+    if (editingUserIds.length === 0) {
+      setErrorMessage("Choose at least one user.");
       return;
     }
 
@@ -218,25 +348,37 @@ function WeekTodoPage({ weekOffset }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          title: editingTitle.trim(),
           dueAt: editingDueAt,
+          userIds: editingUserIds,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update todo due date.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update todo.");
       }
 
       const updatedTodo = await response.json();
       setTodos((prevTodos) =>
         sortByDueAt(prevTodos.map((todo) => (todo.id === todoId ? updatedTodo : todo)))
       );
-      setEditingDueTodoId(null);
+      setEditingTodoId(null);
+      setEditingTitle("");
       setEditingDueAt("");
+      setEditingUserIds([]);
       setErrorMessage("");
     } catch (error) {
       console.error(error);
-      setErrorMessage("Could not update due date.");
+      setErrorMessage(error.message || "Could not update task.");
     }
+  };
+
+  const handleCancelTaskEdit = () => {
+    setEditingTodoId(null);
+    setEditingTitle("");
+    setEditingDueAt("");
+    setEditingUserIds([]);
   };
 
   const formatDateTime = (value) => new Date(value).toLocaleString();
@@ -245,19 +387,27 @@ function WeekTodoPage({ weekOffset }) {
       value
     );
 
+  const filteredTodos = useMemo(() => {
+    if (activeFilterUserIds.length === 0) {
+      return todos;
+    }
+
+    return todos.filter((todo) => (todo.userIds || []).some((userId) => activeFilterUserIds.includes(userId)));
+  }, [activeFilterUserIds, todos]);
+
   const nowTimestamp = Date.now();
   const currentWeekStart = getStartOfWeek(new Date(nowTimestamp));
   const viewedWeekStart = addDays(currentWeekStart, weekOffset * 7);
   const viewedWeekEnd = addDays(viewedWeekStart, 7);
 
-  const overdueTodos = todos.filter(
+  const overdueTodos = filteredTodos.filter(
     (todo) => !todo.completed && new Date(todo.dueAt).getTime() < nowTimestamp
   );
 
   const viewedWeekTodos = useMemo(() => {
     const overdueIds = new Set(overdueTodos.map((todo) => todo.id));
 
-    return todos.filter((todo) => {
+    return filteredTodos.filter((todo) => {
       const dueDate = new Date(todo.dueAt);
       const inViewedWeek = isWithinRange(dueDate, viewedWeekStart, viewedWeekEnd);
 
@@ -271,7 +421,7 @@ function WeekTodoPage({ weekOffset }) {
 
       return true;
     });
-  }, [overdueTodos, todos, viewedWeekEnd, viewedWeekStart, weekOffset]);
+  }, [filteredTodos, overdueTodos, viewedWeekEnd, viewedWeekStart, weekOffset]);
 
   const days = useMemo(
     () =>
@@ -300,11 +450,120 @@ function WeekTodoPage({ weekOffset }) {
   )}`;
   const hasAnyWeekTodos = days.some((day) => day.todos.length > 0);
 
+  const getAssignedUsers = (todo) =>
+    (todo.userIds || []).map((userId) => usersById[userId]).filter(Boolean);
+
+  const getTaskAccentBackground = (todo) => {
+    const colors = getAssignedUsers(todo).map((user) => user.color);
+    if (colors.length === 0) {
+      return "#d9c9ff";
+    }
+
+    if (colors.length === 1) {
+      return colors[0];
+    }
+
+    return `linear-gradient(90deg, ${colors.join(", ")})`;
+  };
+
+  const renderAssignedUsers = (todo) => {
+    const assignedUsers = getAssignedUsers(todo);
+    if (assignedUsers.length === 0) {
+      return <small className="task-users-empty">No assigned users</small>;
+    }
+
+    return (
+      <div className="task-users">
+        {assignedUsers.map((user) => (
+          <span
+            key={`${todo.id}-user-${user.id}`}
+            className="user-chip"
+            style={{ backgroundColor: `${user.color}22`, borderColor: user.color, color: user.color }}
+          >
+            {user.name}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <main className="app">
       <h1>Todo Planner</h1>
       <p className="status">Backend: {connectionStatus}</p>
       {errorMessage ? <p className="error">{errorMessage}</p> : null}
+
+      <section className="user-section">
+        <h2>Users</h2>
+        <p className="section-note">
+          Add up to {MAX_USERS} users. Deleting a user removes only that user from tasks.
+        </p>
+        <form className="user-form" onSubmit={handleAddUser}>
+          <input
+            type="text"
+            placeholder="User name"
+            value={newUserName}
+            onChange={(event) => setNewUserName(event.target.value)}
+            disabled={users.length >= MAX_USERS}
+          />
+          <div className="color-picker-wrap">
+            <button
+              type="button"
+              className="color-picker-btn"
+              onClick={() => colorInputRef.current?.click()}
+              disabled={users.length >= MAX_USERS}
+            >
+              Choose color
+              <span className="color-preview" style={{ backgroundColor: newUserColor }} />
+            </button>
+            <input
+              ref={colorInputRef}
+              className="hidden-color-input"
+              type="color"
+              value={newUserColor}
+              onChange={(event) => setNewUserColor(event.target.value)}
+              disabled={users.length >= MAX_USERS}
+            />
+          </div>
+          <button type="submit" disabled={users.length >= MAX_USERS}>
+            Add User
+          </button>
+        </form>
+        {users.length >= MAX_USERS ? <p className="limit-note">Maximum users reached.</p> : null}
+        <div className="user-list">
+          {users.length === 0 ? <p className="empty">No users yet. Add users first.</p> : null}
+          {users.map((user) => (
+            <article className="user-item" key={user.id}>
+              <span className="user-color-dot" style={{ backgroundColor: user.color }} />
+              <span>{user.name}</span>
+              <button className="delete-btn user-delete-btn" type="button" onClick={() => handleDeleteUser(user.id)}>
+                Delete
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="filter-section">
+        <h2>Filter Tasks By User</h2>
+        <div className="user-toggle-row">
+          {users.map((user) => {
+            const isActive = activeFilterUserIds.includes(user.id);
+            return (
+              <button
+                key={`filter-${user.id}`}
+                type="button"
+                className={`user-toggle ${isActive ? "active" : ""}`}
+                style={{ borderColor: user.color }}
+                onClick={() => setActiveFilterUserIds((previous) => toggleIdInList(previous, user.id))}
+              >
+                <span className="user-color-dot" style={{ backgroundColor: user.color }} />
+                {user.name}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <form className="todo-form" onSubmit={handleAddTodo}>
         <input
@@ -320,6 +579,23 @@ function WeekTodoPage({ weekOffset }) {
         />
         <button type="submit">Add</button>
       </form>
+      <div className="user-toggle-row assign-row">
+        {users.map((user) => {
+          const isSelected = newTodoUserIds.includes(user.id);
+          return (
+            <button
+              key={`new-assignee-${user.id}`}
+              type="button"
+              className={`user-toggle ${isSelected ? "active" : ""}`}
+              style={{ borderColor: user.color }}
+              onClick={() => setNewTodoUserIds((previous) => toggleIdInList(previous, user.id))}
+            >
+              <span className="user-color-dot" style={{ backgroundColor: user.color }} />
+              {user.name}
+            </button>
+          );
+        })}
+      </div>
 
       {weekOffset === 0 ? (
         <section className="overdue-section">
@@ -327,36 +603,72 @@ function WeekTodoPage({ weekOffset }) {
           {overdueTodos.length === 0 ? <p className="empty">No overdue tasks.</p> : null}
           <div className="overdue-list">
             {overdueTodos.map((todo) => (
-              <article className="overdue-item" key={todo.id}>
+              <article
+                className={`overdue-item ${editingTodoId === todo.id ? "is-editing" : ""}`}
+                key={todo.id}
+                style={{ borderLeftColor: (getAssignedUsers(todo)[0] || {}).color || "#f3bfd3" }}
+              >
                 <div className="overdue-main">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={todo.completed}
-                      onChange={() => handleToggleTodo(todo.id)}
-                    />
-                    <span className={todo.completed ? "done" : ""}>{todo.title}</span>
-                  </label>
-                  <small>Due: {formatDateTime(todo.dueAt)}</small>
-                </div>
-                <div className="overdue-actions">
-                  {editingDueTodoId === todo.id ? (
-                    <>
+                  {editingTodoId === todo.id ? (
+                    <div className="edit-panel">
+                      <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={(event) => setEditingTitle(event.target.value)}
+                      />
                       <input
                         type="datetime-local"
                         value={editingDueAt}
                         onChange={(event) => setEditingDueAt(event.target.value)}
                       />
-                      <button type="button" onClick={() => handleSaveDueDate(todo.id)}>
-                        Save due time
+                      <div className="user-toggle-row">
+                        {users.map((user) => {
+                          const selected = editingUserIds.includes(user.id);
+                          return (
+                            <button
+                              key={`edit-overdue-${todo.id}-${user.id}`}
+                              type="button"
+                              className={`user-toggle ${selected ? "active" : ""}`}
+                              style={{ borderColor: user.color }}
+                              onClick={() =>
+                                setEditingUserIds((previous) => toggleIdInList(previous, user.id))
+                              }
+                            >
+                              <span className="user-color-dot" style={{ backgroundColor: user.color }} />
+                              {user.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={() => handleToggleTodo(todo.id)}
+                        />
+                        <span className={todo.completed ? "done" : ""}>{todo.title}</span>
+                      </label>
+                      <small>Due: {formatDateTime(todo.dueAt)}</small>
+                      {renderAssignedUsers(todo)}
+                    </>
+                  )}
+                </div>
+                <div className="overdue-actions">
+                  {editingTodoId === todo.id ? (
+                    <>
+                      <button type="button" onClick={() => handleSaveTask(todo.id)}>
+                        Save
                       </button>
-                      <button type="button" onClick={() => setEditingDueTodoId(null)}>
+                      <button type="button" onClick={handleCancelTaskEdit}>
                         Cancel
                       </button>
                     </>
                   ) : (
-                    <button type="button" onClick={() => handleStartEditingDueDate(todo)}>
-                      Update due time
+                    <button type="button" onClick={() => handleStartEditingTask(todo)}>
+                      Edit task
                     </button>
                   )}
                   <button className="delete-btn" type="button" onClick={() => handleDeleteTodo(todo)}>
@@ -400,24 +712,78 @@ function WeekTodoPage({ weekOffset }) {
                 <div className="task-card-list">
                   {day.todos.map((todo) => (
                     <article className="task-card" key={todo.id}>
+                      <span className="task-accent" style={{ background: getTaskAccentBackground(todo) }} />
                       <div className="task-card-main">
-                        <label className="task-check">
-                          <input
-                            type="checkbox"
-                            checked={todo.completed}
-                            onChange={() => handleToggleTodo(todo.id)}
-                          />
-                          <span className={todo.completed ? "done" : ""}>{todo.title}</span>
-                        </label>
-                        <small className="task-due">Due: {formatDateTime(todo.dueAt)}</small>
+                        {editingTodoId === todo.id ? (
+                          <div className="edit-panel">
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(event) => setEditingTitle(event.target.value)}
+                            />
+                            <input
+                              type="datetime-local"
+                              value={editingDueAt}
+                              onChange={(event) => setEditingDueAt(event.target.value)}
+                            />
+                            <div className="user-toggle-row">
+                              {users.map((user) => {
+                                const selected = editingUserIds.includes(user.id);
+                                return (
+                                  <button
+                                    key={`edit-week-${todo.id}-${user.id}`}
+                                    type="button"
+                                    className={`user-toggle ${selected ? "active" : ""}`}
+                                    style={{ borderColor: user.color }}
+                                    onClick={() =>
+                                      setEditingUserIds((previous) => toggleIdInList(previous, user.id))
+                                    }
+                                  >
+                                    <span className="user-color-dot" style={{ backgroundColor: user.color }} />
+                                    {user.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <label className="task-check">
+                              <input
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={() => handleToggleTodo(todo.id)}
+                              />
+                              <span className={todo.completed ? "done" : ""}>{todo.title}</span>
+                            </label>
+                            <small className="task-due">Due: {formatDateTime(todo.dueAt)}</small>
+                            {renderAssignedUsers(todo)}
+                          </>
+                        )}
                       </div>
                       <div className="task-meta">
                         <span className={`task-status ${todo.completed ? "is-done" : "is-open"}`}>
                           {todo.completed ? "Done" : "Open"}
                         </span>
-                        <button className="delete-btn" type="button" onClick={() => handleDeleteTodo(todo)}>
-                          Delete
-                        </button>
+                        <div className="task-actions">
+                          {editingTodoId === todo.id ? (
+                            <>
+                              <button type="button" onClick={() => handleSaveTask(todo.id)}>
+                                Save
+                              </button>
+                              <button type="button" onClick={handleCancelTaskEdit}>
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button type="button" onClick={() => handleStartEditingTask(todo)}>
+                              Edit
+                            </button>
+                          )}
+                          <button className="delete-btn" type="button" onClick={() => handleDeleteTodo(todo)}>
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
