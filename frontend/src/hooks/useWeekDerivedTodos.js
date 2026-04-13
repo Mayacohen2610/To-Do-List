@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { addDays, getStartOfWeek, isWithinRange } from "../utils/dateWeek";
 
 const formatDayTitle = (value) =>
-  new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" }).format(value);
+  new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }).format(value);
 
 export function useWeekDerivedTodos({ todos, weekOffset, activeFilterUserIds, nowTimestamp }) {
   const filteredTodos = useMemo(() => {
