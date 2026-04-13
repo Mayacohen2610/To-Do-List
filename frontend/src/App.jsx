@@ -388,59 +388,44 @@ function WeekTodoPage({ weekOffset }) {
           </button>
         </div>
 
-        <table className="todo-table">
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Due</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!hasAnyWeekTodos ? (
-              <tr>
-                <td className="empty" colSpan={4}>
-                  No tasks for this week.
-                </td>
-              </tr>
-            ) : null}
-            {days.map((day) => (
-              day.todos.length > 0 ? (
-                <tr key={`day-${day.date.toISOString()}`}>
-                  <td colSpan={4} className="day-row">
-                    {day.title}
-                    {day.todos.map((todo) => (
-                      <div className="task-row" key={todo.id}>
-                        <div className="task-title">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={todo.completed}
-                              onChange={() => handleToggleTodo(todo.id)}
-                            />
-                            <span className={todo.completed ? "done" : ""}>{todo.title}</span>
-                          </label>
-                        </div>
-                        <div>{formatDateTime(todo.dueAt)}</div>
-                        <div>{todo.completed ? "Done" : "Open"}</div>
-                        <div>
-                          <button
-                            className="delete-btn"
-                            type="button"
-                            onClick={() => handleDeleteTodo(todo)}
-                          >
-                            Delete
-                          </button>
-                        </div>
+        <div className="week-cards">
+          {!hasAnyWeekTodos ? <p className="empty week-empty">No tasks for this week.</p> : null}
+          {days.map((day) =>
+            day.todos.length > 0 ? (
+              <article className="day-card" key={`day-${day.date.toISOString()}`}>
+                <header className="day-card-header">
+                  <h3>{day.title}</h3>
+                  <span className="day-count">{day.todos.length} task(s)</span>
+                </header>
+                <div className="task-card-list">
+                  {day.todos.map((todo) => (
+                    <article className="task-card" key={todo.id}>
+                      <div className="task-card-main">
+                        <label className="task-check">
+                          <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => handleToggleTodo(todo.id)}
+                          />
+                          <span className={todo.completed ? "done" : ""}>{todo.title}</span>
+                        </label>
+                        <small className="task-due">Due: {formatDateTime(todo.dueAt)}</small>
                       </div>
-                    ))}
-                  </td>
-                </tr>
-              ) : null
-            ))}
-          </tbody>
-        </table>
+                      <div className="task-meta">
+                        <span className={`task-status ${todo.completed ? "is-done" : "is-open"}`}>
+                          {todo.completed ? "Done" : "Open"}
+                        </span>
+                        <button className="delete-btn" type="button" onClick={() => handleDeleteTodo(todo)}>
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            ) : null
+          )}
+        </div>
       </section>
     </main>
   );
