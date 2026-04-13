@@ -1,0 +1,214 @@
+.app {
+  max-width: 1080px;
+  margin: 36px auto;
+  padding: 28px;
+  border: 1px solid #e4e4e4;
+  border-radius: 14px;
+  background-color: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.app h1,
+.app h2,
+.app p {
+  margin-top: 0;
+}
+
+.app h1 {
+  margin-bottom: 10px;
+}
+
+.status {
+  margin-bottom: 20px;
+  color: #5b5b5b;
+}
+
+.error {
+  margin-bottom: 12px;
+  color: #b00020;
+}
+
+.todo-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.todo-form input {
+  padding: 10px;
+  border: 1px solid #cdcdcd;
+  border-radius: 8px;
+}
+
+.todo-form button {
+  padding: 10px 14px;
+  border: 1px solid #222222;
+  border-radius: 8px;
+  background-color: #222222;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.overdue-section {
+  margin-bottom: 24px;
+  padding: 14px;
+  border: 1px solid #f4b4b4;
+  border-radius: 10px;
+  background-color: #fff7f7;
+}
+
+.overdue-section h2 {
+  color: #b00020;
+  margin-bottom: 10px;
+}
+
+.overdue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.overdue-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #f2b3b3;
+  border-radius: 8px;
+  background-color: #fff;
+  padding: 10px;
+}
+
+.overdue-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #7a0000;
+}
+
+.overdue-main label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.overdue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.overdue-actions input,
+.overdue-actions button {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+}
+
+.overdue-actions button {
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.week-section {
+  border: 1px solid #ebebeb;
+  border-radius: 10px;
+  padding: 14px;
+  background-color: #fcfcfc;
+}
+
+.week-header {
+  margin-bottom: 12px;
+}
+
+.week-header p {
+  margin-bottom: 0;
+  color: #666666;
+}
+
+.week-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.week-nav button {
+  padding: 9px 13px;
+  border: 1px solid #2f2f2f;
+  border-radius: 7px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.todo-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.todo-table th,
+.todo-table td {
+  border-bottom: 1px solid #ececec;
+  text-align: left;
+  padding: 10px;
+  vertical-align: top;
+}
+
+.todo-table th {
+  background-color: #f6f6f6;
+}
+
+.day-row {
+  background-color: #fafafa;
+  font-weight: 700;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 0.6fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e5e5e5;
+  font-weight: 400;
+}
+
+.task-title label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.done {
+  text-decoration: line-through;
+  color: #666666;
+}
+
+.delete-btn {
+  padding: 7px 11px;
+  border: 1px solid #b00020;
+  border-radius: 6px;
+  background-color: transparent;
+  color: #b00020;
+  cursor: pointer;
+}
+
+.empty {
+  color: #666666;
+}
+
+@media (max-width: 850px) {
+  .todo-form {
+    grid-template-columns: 1fr;
+  }
+
+  .task-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
